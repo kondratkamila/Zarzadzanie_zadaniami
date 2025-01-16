@@ -64,6 +64,11 @@ CREATE TABLE TaskHistory (
     ChangeDescription NVARCHAR(MAX) NOT NULL
 );
 
+-- Kompresja dla indexu na tabeli TaskHistory
+
+CREATE INDEX IX_TaskHistory_TaskID ON TaskHistory (taskid)
+WITH (DATA_COMPRESSION = PAGE);
+
 -- Tabela dla uprawnień
 CREATE TABLE Permissions (
     PermissionId INT IDENTITY PRIMARY KEY,
@@ -155,6 +160,19 @@ BEGIN
         THROW;
     END CATCH
 END;
+
+--Alternatywnie tworzenie triggera do modyfikaci w tabli Tasks
+
+CREATE TRIGGER trg_UpdateTaskModifiedDate
+ON Tasks
+AFTER UPDATE
+AS
+BEGIN
+   UPDATE Tasks
+   SET last_modified = GETDATE()
+   WHERE taskid IN (SELECT taskid FROM inserted);
+END;
+------------------------------
 
 -- Procedura: Usuwanie zadania
 CREATE PROCEDURE DeleteTask
