@@ -55,6 +55,18 @@ CREATE TABLE Tasks (
 )
 ON TenantPartitionScheme (TenantId);
 
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'ArchivedTasks' AND type = 'U')
+BEGIN
+    CREATE TABLE ArchivedTasks (
+        TaskID INT PRIMARY KEY,           -- Zakładam, że TaskID jest kluczem głównym
+        TaskName NVARCHAR(255) NOT NULL,
+        CreatedDate DATETIME NOT NULL,
+        DueDate DATETIME NULL,
+        Status NVARCHAR(50) NOT NULL,
+        ArchivedDate DATETIME DEFAULT GETDATE() -- Pole informujące o dacie archiwizacji
+    );
+END
+
 -- Tabela dla historii zmian zadań
 CREATE TABLE TaskHistory (
     HistoryId BIGINT IDENTITY PRIMARY KEY,
@@ -271,8 +283,20 @@ BEGIN
         -- Dodanie logowania operacji archiwizacji
         PRINT 'Tasks archived successfully.';
     END TRY
-    BEGIN CATCH
-        -- Obsługa błędów
+     BEGIN CATCH
+        ROLLBACK TRANSACTION; -- Wycofanie transakcji w przypadku błędu
+        PRINT 'There was an error during archiving: ' + ERROR_MESSAGE();
         THROW;
     END CATCH
 END;
+
+-- 3. Testowanie procedury
+-- Przykładowe uruchomienie procedury: archiwizujemy dane starsze niż 1 rok
+DECLARE @CutoffDate DATETIME = DATEADD(YEAR, -1, GETDATE());
+EXEC ArchiveOldTasks @CutoffDate;
+
+-- 4. Sprawdzenie wyników
+-- Dane zarchiwizowane
+SELECT * FROM ArchivedTasks;
+-- Dane pozostałe w tabeli Tasks
+SELECT * FROM Tasks;
