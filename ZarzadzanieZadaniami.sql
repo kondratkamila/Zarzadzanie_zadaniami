@@ -241,6 +241,8 @@ BEGIN
     END CATCH
 END;
 
+-------------------------------------------------------------------------------------------------------
+
 -- Procedura: Statystyki dla menadżerów
 CREATE PROCEDURE GetManagerStatistics
     @TenantId INT
@@ -260,6 +262,12 @@ END;
 
 ----------------------------------------------------
 EXEC sp_set_session_context 'UserId', @UserId;
+
+DECLARE @SqlUserName NVARCHAR(100);
+SET @SqlUserName = SYSTEM_USER;  -- Albo SUSER_SNAME() 
+
+-- Zdobądź UserId na podstawie nazwy użytkownika
+SELECT @UserId = UserId FROM Users WHERE UserName = @SqlUserName;
 
 CREATE PROCEDURE GetUserTasks
     @UserId INT
