@@ -260,7 +260,8 @@ BEGIN
     ORDER BY Month, TaskCount DESC;
 END;
 
-----------------------------------------------------
+---------------------------------------------------
+
 EXEC sp_set_session_context 'UserId', @UserId;
 
 DECLARE @SqlUserName NVARCHAR(100);
@@ -299,6 +300,22 @@ END;
 
 
 ---------------------------------------------------
+
+
+CREATE VIEW UserTasks AS
+SELECT t.TaskId, t.Title, t.Description, t.Status, t.Priority, t.OwnerId
+FROM Tasks t
+JOIN Users u ON t.OwnerId = u.UserId
+LEFT JOIN Permissions p ON t.TaskId = p.TaskId
+WHERE
+    -- Menedżerzy mają dostęp do wszystkich zadań
+    (u.UserId = USER_ID() AND EXISTS (SELECT 1 FROM Roles r WHERE r.UserId = u.UserId AND r.Role = 'Manager'))
+    -- Zwykli użytkownicy widzą tylko swoje zadania lub zadania udostępnione im
+    OR t.OwnerId = USER_ID() 
+    OR p.SharedWith = USER_ID();
+
+
+--------------------------------------------------
 
 -- Procedura: Raport dla podmiotów
 CREATE PROCEDURE TenantActivityReport
