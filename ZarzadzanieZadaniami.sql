@@ -259,14 +259,15 @@ BEGIN
 END;
 
 ----------------------------------------------------
-
+EXEC sp_set_session_context 'UserId', @UserId;
 
 CREATE PROCEDURE GetUserTasks
     @UserId INT
 AS
 BEGIN
     DECLARE @IsManager BIT;
-
+    DECLARE @UserId INT;
+    SET @UserId = SESSION_CONTEXT('UserId');
     -- Sprawdzamy, czy użytkownik jest menedżerem
     SELECT @IsManager = CASE WHEN Role = 'Manager' THEN 1 ELSE 0 END
     FROM Users
