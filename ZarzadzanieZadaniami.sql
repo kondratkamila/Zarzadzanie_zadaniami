@@ -258,6 +258,39 @@ BEGIN
     ORDER BY Month, TaskCount DESC;
 END;
 
+----------------------------------------------------
+
+
+CREATE PROCEDURE GetUserTasks
+    @UserId INT
+AS
+BEGIN
+    DECLARE @IsManager BIT;
+
+    -- Sprawdzamy, czy użytkownik jest menedżerem
+    SELECT @IsManager = CASE WHEN Role = 'Manager' THEN 1 ELSE 0 END
+    FROM Users
+    WHERE UserId = @UserId;
+
+    IF @IsManager = 1
+    BEGIN
+        -- Menedżer może widzieć wszystkie zadania
+        SELECT TaskId, Title, Description, Status, Priority
+        FROM Tasks;
+    END
+    ELSE
+    BEGIN
+        -- Zwykły użytkownik widzi tylko swoje zadania lub zadania, które zostały z nim udostępnione
+        SELECT t.TaskId, t.Title, t.Description, t.Status, t.Priority
+        FROM Tasks t
+        LEFT JOIN Permissions p ON t.TaskId = p.TaskId
+        WHERE t.OwnerId = @UserId OR p.SharedWith = @UserId;
+    END
+END;
+
+
+---------------------------------------------------
+
 -- Procedura: Raport dla podmiotów
 CREATE PROCEDURE TenantActivityReport
     @TenantId INT
