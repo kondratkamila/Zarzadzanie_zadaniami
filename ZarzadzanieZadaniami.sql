@@ -175,14 +175,24 @@ END;
 
 --Alternatywnie tworzenie triggera do modyfikaci w tabli Tasks
 
-CREATE TRIGGER trg_UpdateTaskModifiedDate
+CREATE TRIGGER trg_AfterTaskUpdate
 ON Tasks
 AFTER UPDATE
 AS
 BEGIN
-   UPDATE Tasks
-   SET last_modified = GETDATE()
-   WHERE taskid IN (SELECT taskid FROM inserted);
+    -- Aktualizujemy kolumnę UpdatedAt w tabeli Tasks
+    UPDATE Tasks
+    SET UpdatedAt = GETDATE()  -- lub SYSDATETIME() w zależności od potrzeby
+    FROM Tasks t
+    INNER JOIN inserted i ON t.TaskId = i.TaskId;
+
+    -- Wstawiamy rekord do tabeli TaskHistory
+    INSERT INTO TaskHistory (TaskId, ChangedBy, ChangeDescription)
+    SELECT 
+        inserted.TaskId,
+        SUSER_SNAME(),  -- Użytkownik, który wykonał aktualizację
+        'Task updated via direct update'
+    FROM inserted;
 END;
 ------------------------------
 
